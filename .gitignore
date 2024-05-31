@@ -1,0 +1,13 @@
+# MLFlow folders
+mlruns/
+data/
+artifacts/
+mlartifacts/
+models/
+*.db
+
+# Data
+
+*.csv
+*.parquet
+*.pkl
