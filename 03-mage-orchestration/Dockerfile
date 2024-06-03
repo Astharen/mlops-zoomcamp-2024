@@ -6,8 +6,6 @@ ARG USER_CODE_PATH=${MAGE_CODE_PATH}/${PROJECT_NAME}
 
 WORKDIR ${MAGE_CODE_PATH}
 
-COPY ${PROJECT_NAME} ${PROJECT_NAME}
-
 ENV USER_CODE_PATH=${USER_CODE_PATH}
 
 # Install custom Python libraries and dependencies for your project.

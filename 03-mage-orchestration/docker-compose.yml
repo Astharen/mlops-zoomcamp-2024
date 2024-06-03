@@ -8,6 +8,7 @@ services:
     ports:
       - 6789:6789
     volumes:
+      - .:/home/src/
       # Mount your local codebase to the container.
       - .:/$MAGE_CODE_PATH
       # Store the data output on local machine to easily debug (optional).
@@ -23,6 +24,7 @@ services:
       - app-network
     depends_on:
       - magic-database
+      - mlflow
     stdin_open: true # used for interactive debugging
     tty: true # used for interactive debugging
   magic-database:
@@ -36,6 +38,16 @@ services:
       # Custom database initialization scripts (optional).
       - ./scripts/database:/docker-entrypoint-initdb.d
     restart: always
+    networks:
+      - app-network
+  mlflow:
+    build:
+      context: .
+      dockerfile: mlflow.dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - "${PWD}/mlflow:/home/mlflow/"
     networks:
       - app-network
 networks:
