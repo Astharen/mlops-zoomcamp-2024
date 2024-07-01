@@ -129,7 +129,7 @@ In both cases we should adjust commands for localstack. What option do we need t
 
 * `--backend-store-uri`
 * `--profile`
-* `--endpoint-url`
+* `--endpoint-url` <- This one
 * `--version`
 
 
@@ -219,9 +219,12 @@ df_input.to_parquet(
 )
 ```
 
+
+Used: ```aws --endpoint-url=http://localhost:4566 s3 ls --summarize --human-readable --recursive s3://nyc-duration/```
+
 What's the size of the file?
 
-* 3620
+* 3620 <- This one
 * 23620
 * 43620
 * 63620
@@ -253,7 +256,7 @@ verify the result is correct.
 What's the sum of predicted durations for the test dataframe?
 
 * 13.08
-* 36.28
+* 36.28 <- This one
 * 69.28
 * 81.08
 

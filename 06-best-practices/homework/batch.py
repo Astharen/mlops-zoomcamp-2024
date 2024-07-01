@@ -1,13 +1,39 @@
+import os
 import sys
 import pickle
 import pandas as pd
 
 
-def read_data(filename, categorical):
-    df = pd.read_parquet(filename)
-    
-    df = prepare_data(df, categorical)
+S3_ENDPOINT_URL = "http://localhost:4566"
+
+options = {
+    'client_kwargs': {
+        'endpoint_url': S3_ENDPOINT_URL
+    }
+}
+
+
+def read_data(filename):
+
+    if S3_ENDPOINT_URL and filename.startswith('s3://'):
+        df = pd.read_parquet(filename, storage_options=options)
+    else:
+        df = pd.read_parquet(filename)
+
     return df
+
+
+def save_data(df, filename):
+    if S3_ENDPOINT_URL and filename.startswith('s3://'):
+        df.to_parquet(
+            filename,
+            engine='pyarrow',
+            compression=None,
+            index=False,
+            storage_options=options
+        )
+    else:
+        df.to_parquet(filename, engine='pyarrow', index=False)
 
 
 def prepare_data(df, categorical):
@@ -20,17 +46,32 @@ def prepare_data(df, categorical):
     return df
 
 
+def get_input_path(year, month):
+    default_input_pattern = 'https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year:04d}-{month:02d}.parquet'
+    input_pattern = os.getenv('INPUT_FILE_PATTERN', default_input_pattern)
+    return input_pattern.format(year=year, month=month)
+
+
+def get_output_path(year, month):
+    default_output_pattern = 's3://nyc-duration/taxi_type=fhv/year={year:04d}/month={month:02d}/predictions.parquet'
+    output_pattern = os.getenv('OUTPUT_FILE_PATTERN', default_output_pattern)
+    return output_pattern.format(year=year, month=month)
+
+
 def main(year, month):
 
-    input_file = f'https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{year:04d}-{month:02d}.parquet'
-    output_file = f'06-best-practices/output/yellow_tripdata_{year:04d}-{month:02d}.parquet'
+    input_file = get_input_path(year, month)
+    print(input_file)
+    output_file = get_output_path(year, month)
+    print(output_file)
 
-    with open('06-best-practices/homework/model.bin', 'rb') as f_in:
+    with open('model.bin', 'rb') as f_in:
         dv, lr = pickle.load(f_in)
 
     categorical = ['PULocationID', 'DOLocationID']
 
-    df = read_data(input_file, categorical)
+    df = read_data(input_file)
+    df = prepare_data(df, categorical)
     df['ride_id'] = f'{year:04d}/{month:02d}_' + df.index.astype('str')
 
     dicts = df[categorical].to_dict(orient='records')
@@ -38,12 +79,13 @@ def main(year, month):
     y_pred = lr.predict(X_val)
 
     print('predicted mean duration:', y_pred.mean())
+    print('predicted sum duration:', y_pred.sum())
 
     df_result = pd.DataFrame()
     df_result['ride_id'] = df['ride_id']
     df_result['predicted_duration'] = y_pred
 
-    df_result.to_parquet(output_file, engine='pyarrow', index=False)
+    save_data(df_result, output_file)
 
 
 if __name__ == '__main__':
